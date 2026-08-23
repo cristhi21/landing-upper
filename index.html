@@ -322,6 +322,14 @@
   }
   .form-success.is-visible{display:flex;}
   .form-success svg{width:18px;height:18px;flex:none;color:var(--green);}
+  .form-error{
+    display:none;margin-top:18px;padding:14px 16px;border-radius:10px;
+    background:color-mix(in srgb, var(--navy) 8%, transparent);border:1px solid color-mix(in srgb, var(--navy) 25%, transparent);
+    color:var(--ink);font-size:14px;font-weight:500;align-items:center;gap:9px;
+  }
+  .form-error.is-visible{display:flex;}
+  .form-error svg{width:18px;height:18px;flex:none;color:var(--navy);}
+  .form-error a{color:var(--blue);font-weight:600;}
 
   .contact-side{display:flex;flex-direction:column;gap:16px;}
   .contact-card{background:var(--navy);color:var(--on-navy);border-radius:var(--radius-lg);padding:28px 26px;}
@@ -668,6 +676,10 @@
       </div>
       <div class="contact-grid">
         <form class="contact-form reveal" id="contactForm" novalidate>
+          <input type="hidden" name="_subject" value="Nueva solicitud desde la web - Upper Service">
+          <input type="hidden" name="_template" value="table">
+          <input type="hidden" name="_captcha" value="false">
+          <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
           <div class="form-row cols-2">
             <div class="field">
               <label for="nombre">Nombre completo</label>
@@ -713,27 +725,27 @@
             <svg class="icon"><use href="#i-check-circle"/></svg>
             ¡Gracias! Recibimos tu solicitud y te contactaremos pronto.
           </div>
+          <div class="form-error" id="formError">
+            <svg class="icon"><use href="#i-info"/></svg>
+            <span>No pudimos enviar tu solicitud automáticamente. Escríbenos directo a <a href="mailto:contacto@upperservice.com.co">contacto@upperservice.com.co</a> o por WhatsApp.</span>
+          </div>
         </form>
 
         <div class="contact-side">
           <div class="contact-card reveal">
             <h3>Otras formas de contactarnos</h3>
             <div class="contact-list">
-              <a href="https://wa.me/573000000000">
+              <a href="https://wa.me/573163728859">
                 <span class="icon-badge"><svg class="icon"><use href="#i-whatsapp"/></svg></span>
-                <span><strong>WhatsApp</strong>+57 300 000 0000</span>
+                <span><strong>WhatsApp</strong>+57 316 372 8859</span>
               </a>
-              <a href="mailto:contacto@upperservice.com">
+              <a href="mailto:contacto@upperservice.com.co">
                 <span class="icon-badge"><svg class="icon"><use href="#i-mail"/></svg></span>
-                <span><strong>Correo</strong>contacto@upperservice.com</span>
-              </a>
-              <a href="tel:+576010000000">
-                <span class="icon-badge"><svg class="icon"><use href="#i-phone"/></svg></span>
-                <span><strong>Línea de atención</strong>+57 (601) 000 0000</span>
+                <span><strong>Correo</strong>contacto@upperservice.com.co</span>
               </a>
               <div>
                 <span class="icon-badge"><svg class="icon"><use href="#i-pin"/></svg></span>
-                <span><strong>Oficina</strong>Bogotá, Colombia</span>
+                <span><strong>Oficina</strong>Calle 8F # 33 Sur - 6, Jamundí, Colombia</span>
               </div>
             </div>
             <div class="social-row">
@@ -741,10 +753,6 @@
               <a href="#" aria-label="Instagram"><svg class="icon"><use href="#i-instagram"/></svg></a>
               <a href="#" aria-label="Facebook"><svg class="icon"><use href="#i-facebook"/></svg></a>
             </div>
-          </div>
-          <div class="placeholder-note">
-            <svg class="icon"><use href="#i-info"/></svg>
-            <span>Los datos de contacto (WhatsApp, correo, teléfono, dirección y redes) son de ejemplo. Reemplázalos por la información real de Upper Service antes de publicar la página.</span>
           </div>
         </div>
       </div>
@@ -786,7 +794,7 @@
     </div>
     <div class="footer-bottom">
       <span>© 2026 Upper Service. Todos los derechos reservados.</span>
-      <span>Bogotá, Colombia</span>
+      <span>Jamundí, Colombia</span>
     </div>
   </div>
 </footer>
@@ -826,15 +834,43 @@
 
     var form = document.getElementById('contactForm');
     var success = document.getElementById('formSuccess');
+    var error = document.getElementById('formError');
+    var submitBtn = form.querySelector('button[type="submit"]');
+    var submitLabel = submitBtn.innerHTML;
     var servicioSelect = document.getElementById('servicio');
     var nombreInput = document.getElementById('nombre');
 
     form.addEventListener('submit', function(e){
       e.preventDefault();
       if(!form.checkValidity()){ form.reportValidity(); return; }
-      success.classList.add('is-visible');
-      form.reset();
-      success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if(form.elements['_honey'].value){ return; }
+
+      success.classList.remove('is-visible');
+      error.classList.remove('is-visible');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = 'Enviando...';
+
+      var payload = Object.fromEntries(new FormData(form).entries());
+
+      fetch('https://formsubmit.co/ajax/contacto@upperservice.com.co', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(function(res){ if(!res.ok){ throw new Error('request failed'); } return res.json(); })
+        .then(function(){
+          success.classList.add('is-visible');
+          form.reset();
+          success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        })
+        .catch(function(){
+          error.classList.add('is-visible');
+          error.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        })
+        .finally(function(){
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = submitLabel;
+        });
     });
 
     document.querySelectorAll('.service-link').forEach(function(btn){
